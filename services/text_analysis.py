@@ -33,10 +33,6 @@ DEFAULT_STOPWORDS = {
 }
 
 def load_stopwords() -> set:
-    """
-    Загружает стоп-слова из внешнего файла data/stopwords.txt.
-    Если файл отсутствует, возвращает дефолтный набор.
-    """
     if os.path.exists(STOPWORDS_FILE):
         try:
             with open(STOPWORDS_FILE, "r", encoding="utf-8") as f:
@@ -49,14 +45,9 @@ def load_stopwords() -> set:
 STOPWORDS = load_stopwords()
 
 def lemmatize_word(word: str) -> str:
-    """Приводит слово к нормальной словарной форме."""
     return morph.parse(word)[0].normal_form
 
 def clean_and_tokenize(text_series: pd.Series) -> list:
-    """
-    Очищает текст, выполняет токенизацию, лемматизацию 
-    и фильтрацию по стоп-словам.
-    """
     text = " ".join(text_series.dropna().astype(str).tolist()).lower()
     text = re.sub(r'[^\w\s]', ' ', text)
     raw_words = text.split()

@@ -5,7 +5,6 @@ import pandas as pd
 def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     st.sidebar.header("Настройки фильтрации")
     
-    # Обертка в форму решает проблему с размытием и перезагрузкой при кликах
     with st.sidebar.form(key="filters_form"):
         draft_filters = {}
 
@@ -14,11 +13,16 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
             
             gender_col = 'Укажите Ваш пол'
             if gender_col in df.columns:
+                # Добавляем категорию для пустых значений
                 genders = df[gender_col].dropna().unique().tolist()
                 genders.sort(key=lambda x: str(x))
-                if genders:
-                    st.markdown("**Пол**")
-                    draft_filters['gender'] = [g for g in genders if st.checkbox(str(g), value=True, key=f"f_gender_{g}")]
+                
+                st.markdown("**Пол**")
+                draft_filters['gender'] = [g for g in genders if st.checkbox(str(g), value=True, key=f"f_gender_{g}")]
+                
+                # Отдельный чекбокс для незаполненных данных
+                include_nan = st.checkbox("Не указано (без анкеты)", value=True, key="f_gender_nan")
+                draft_filters['gender_include_nan'] = include_nan
                         
             age_col = 'Укажите Ваш возраст'
             if age_col in df.columns:
@@ -57,7 +61,6 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
         # --- Группа фильтров: Оценки ---
         with st.expander("Оценки студентов", expanded=False):
             
-            speaker_col = 'How do you evaluate the speaker?' # или ваша колонка спикера
             speaker_col = 'Как Вы оцениваете работу спикера модуля?'
             if speaker_col in df.columns:
                 valid_scores = pd.to_numeric(df[speaker_col], errors='coerce').dropna()
@@ -75,14 +78,11 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
                 else:
                     draft_filters['speaker_score'] = None
 
-        # Кнопка отправки формы
         submit_button = st.form_submit_button(label="Применить фильтрацию", type="primary", use_container_width=True)
 
-    # Инициализация состояния при самом первом зажиге приложения
     if 'applied_filters' not in st.session_state:
         st.session_state['applied_filters'] = draft_filters
 
-    # Если пользователь нажал кнопку внутри формы, обновляем зафиксированные фильтры
     if submit_button:
         st.session_state['applied_filters'] = draft_filters
 
@@ -90,12 +90,15 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     filtered_df = df.copy()
     applied = st.session_state['applied_filters']
 
-    # Логика фильтрации: если выбраны все варианты категории, фильтр не применяется (чтобы не отсекать пустые строки зря).
-    # Если выбрана часть вариантов — фильтруем строго по ним.
-    if applied.get('gender') and gender_col in filtered_df.columns:
-        all_genders = df[gender_col].dropna().unique().tolist()
-        if len(applied['gender']) < len(all_genders):
-            filtered_df = filtered_df[filtered_df[gender_col].isin(applied['gender'])]
+    if 'gender' in applied and gender_col in filtered_df.columns:
+        selected_genders = applied['gender']
+        include_nan = applied.get('gender_include_nan', True)
+        
+        gender_mask = filtered_df[gender_col].isin(selected_genders)
+        if include_nan:
+            gender_mask |= filtered_df[gender_col].isna()
+            
+        filtered_df = filtered_df[gender_mask]
         
     if applied.get('age') and age_col in filtered_df.columns:
         all_ages = df[age_col].dropna().unique().tolist()
@@ -118,12 +121,12 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
             filtered_df = filtered_df[filtered_df[mentor_col].isin(applied['mentor'])]
         
     if applied.get('speaker_score') and speaker_col in filtered_df.columns:
-        filtered_df[speaker_col] = pd.to_numeric(filtered_df[speaker_col], errors='coerce')
         score_min, score_max = applied['speaker_score']
-        filtered_df = filtered_df[
-            (filtered_df[speaker_col] >= score_min) & 
-            (filtered_df[speaker_col] <= score_max) | 
-            filtered_df[speaker_col].isna()
-        ]
+        speaker_series = pd.to_numeric(filtered_df[speaker_col], errors='coerce')
+        
+        in_range_mask = speaker_series.between(score_min, score_max)
+        isna_mask = speaker_series.isna()
+        
+        filtered_df = filtered_df[in_range_mask | isna_mask]
 
     return filtered_df

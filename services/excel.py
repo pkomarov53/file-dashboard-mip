@@ -1,15 +1,9 @@
 # Обработка загружаемого .xlsx файла
 import pandas as pd
-import streamlit as st
 
-@st.cache_data
-def load_data(file_path: str):
+def read_excel_safely(file_path: str) -> pd.DataFrame:
     try:
-        df = pd.read_excel(file_path)
-        return df
-    except FileNotFoundError:
-        st.error(f"Файл '{file_path}' не найден.")
-        return None
+        return pd.read_excel(file_path)
     except Exception as e:
-        st.error(f"Ошибка при чтении Excel файла: {e}")
-        return None
+        print(f"Ошибка при чтении файла {file_path}: {e}")
+        return pd.DataFrame()
