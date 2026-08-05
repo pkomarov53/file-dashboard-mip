@@ -1,11 +1,19 @@
-import pandas as pd
+# services/text_analysis.py
+import os
 import re
 from collections import Counter
+import pandas as pd
+import pymorphy3
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
-# Базовый список стоп-слов для очистки текста
-STOPWORDS = set([
+# Инициализация морфологического анализатора
+morph = pymorphy3.MorphAnalyzer()
+
+STOPWORDS_FILE = "data/stopwords.txt"
+
+# Базовый набор стоп-слов на случай отсутствия внешнего файла
+DEFAULT_STOPWORDS = {
     "и", "в", "во", "не", "что", "он", "на", "я", "с", "со", "как", "а", "то", 
     "все", "она", "так", "его", "но", "да", "ты", "к", "у", "же", "вы", "за", 
     "бы", "по", "только", "ее", "мне", "было", "вот", "от", "меня", "еще", "нет", 
@@ -20,20 +28,51 @@ STOPWORDS = set([
     "хоть", "после", "над", "больше", "тот", "через", "эти", "нас", "про", "всего", 
     "них", "какая", "много", "разве", "три", "эту", "моя", "впрочем", "хорошо", "свою", 
     "этой", "перед", "иногда", "лучше", "чуть", "том", "нельзя", "такой", "им", "более", 
-    "всегда", "конечно", "всю", "между", 
-    # Специфичные слова, которые не несут смысла для анализа
-    "модуль", "модуля", "модуле", "курс", "курса", "очень", "просто", "спасибо", "хотелось", "бы"
-])
+    "всегда", "конечно", "всю", "между", "это", "который", "очень", "просто", "спасибо", 
+    "хотелось", "модуль", "курс"
+}
+
+def load_stopwords() -> set:
+    """
+    Загружает стоп-слова из внешнего файла data/stopwords.txt.
+    Если файл отсутствует, возвращает дефолтный набор.
+    """
+    if os.path.exists(STOPWORDS_FILE):
+        try:
+            with open(STOPWORDS_FILE, "r", encoding="utf-8") as f:
+                custom_words = {line.strip().lower() for line in f if line.strip()}
+                return custom_words.union(DEFAULT_STOPWORDS)
+        except Exception:
+            return DEFAULT_STOPWORDS
+    return DEFAULT_STOPWORDS
+
+STOPWORDS = load_stopwords()
+
+def lemmatize_word(word: str) -> str:
+    """Приводит слово к нормальной словарной форме."""
+    return morph.parse(word)[0].normal_form
 
 def clean_and_tokenize(text_series: pd.Series) -> list:
-    # Отбрасываем пустые значения и переводим в нижний регистр
+    """
+    Очищает текст, выполняет токенизацию, лемматизацию 
+    и фильтрацию по стоп-словам.
+    """
     text = " ".join(text_series.dropna().astype(str).tolist()).lower()
-    # Убираем всю пунктуацию
     text = re.sub(r'[^\w\s]', ' ', text)
-    words = text.split()
-    # Фильтруем слова
-    words = [w for w in words if w not in STOPWORDS and len(w) > 2]
-    return words
+    raw_words = text.split()
+    
+    clean_lemmas = []
+    for w in raw_words:
+        if len(w) <= 2 or w in STOPWORDS:
+            continue
+        
+        lemma = lemmatize_word(w)
+        
+        # Повторная проверка леммы по стоп-словам
+        if len(lemma) > 2 and lemma not in STOPWORDS:
+            clean_lemmas.append(lemma)
+            
+    return clean_lemmas
 
 def get_top_words_df(text_series: pd.Series, top_n: int = 15) -> pd.DataFrame:
     words = clean_and_tokenize(text_series)

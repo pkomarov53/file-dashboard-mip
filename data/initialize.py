@@ -1,33 +1,32 @@
 # Инициализация базы данных
-# Переносит данные из .xlsx в .db
 import pandas as pd
 import sqlite3
 import os
 
-# Путь к локальной БД
 DB_PATH = 'data/cache/feedback.db'
 
-def init_db(excel_file_path: str):
-    # Создаем папку data/cache, если её нет
+def init_db(feedback_path: str, intro_path: str):
     os.makedirs('data/cache', exist_ok=True)
     
-    conn = sqlite3.connect(DB_PATH)
-    
     try:
-        # Проверяем, существует ли уже таблица feedback
-        cursor = conn.cursor()
-        cursor.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='feedback'")
-        if cursor.fetchone()[0] == 1:
-            return # Данные уже загружены, пропускаем инициализацию
+        df_feedback = pd.read_excel(feedback_path)
+        df_intro = pd.read_excel(intro_path)
         
-        # Если таблицы нет, считываем Excel и заливаем в БД
-        df = pd.read_excel(excel_file_path)
+        demo_cols = [
+            'userId', 
+            'Укажите Ваш пол', 
+            'Укажите Ваш возраст', 
+            'Имеется ли у вас психологическое образование?'
+        ]
         
-        # Сохраняем в таблицу 'feedback' (заменяем, если есть)
-        df.to_sql('feedback', conn, if_exists='replace', index=False)
-        print("Данные успешно скопированы в локальную базу.")
+        df_intro_clean = df_intro.dropna(subset=['userId'])[demo_cols].drop_duplicates(subset=['userId'], keep='last')
+        df_merged = df_feedback.merge(df_intro_clean, on='userId', how='left')
+        
+        # Гарантированное закрытие соединения после записи
+        with sqlite3.connect(DB_PATH) as conn:
+            df_merged.to_sql('feedback', conn, if_exists='replace', index=False)
+            
+        print("Данные успешно объединены и обновлены в локальной базе.")
         
     except Exception as e:
         print(f"Ошибка при инициализации БД: {e}")
-    finally:
-        conn.close()

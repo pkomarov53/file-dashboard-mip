@@ -3,12 +3,13 @@ import streamlit as st
 from services.diagrams import create_bar_chart, create_donut_chart_from_multiple_cols
 from services.text_analysis import get_top_words_df, create_wordcloud_fig
 import plotly.express as px
+import matplotlib.pyplot as plt
 
 def render_dashboard(df):
     st.title("Дашборд: Обратная связь студентов")
     st.markdown("Детальный анализ удовлетворенности, использования платформы и карьерных интересов.")
     
-    # --- БЛОК 1: KPI (Ключевые показатели) ---
+    # --- БЛОК 1: KPI ---
     st.markdown("### Сводные показатели")
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
     kpi1.metric("Всего анкет", len(df))
@@ -28,7 +29,6 @@ def render_dashboard(df):
     st.divider()
 
     # --- БЛОК 2: НАВИГАЦИЯ ПО ВКЛАДКАМ ---
-    # Добавлена новая вкладка "Открытые ответы"
     tab1, tab2, tab3, tab4 = st.tabs(["Учебный процесс", "Платформа и Наставник", "Карьера и интересы", "Открытые ответы"])
 
     with tab1:
@@ -67,7 +67,6 @@ def render_dashboard(df):
                 fig_car = create_donut_chart_from_multiple_cols(df, career_cols, "Важные факторы в карьере")
                 st.plotly_chart(fig_car, use_container_width=True)
                 
-    # НОВЫЙ БЛОК: Анализ открытых ответов
     with tab4:
         st.subheader("Анализ текстовых комментариев")
         st.markdown("Здесь собраны самые часто упоминаемые слова и термины из открытых ответов студентов. Это помогает быстро выявить ключевые запросы на улучшения.")
@@ -75,7 +74,6 @@ def render_dashboard(df):
         target_column = 'Что бы Вы хотели изменить или улучшить в этом модуле?'
         
         if target_column in df.columns:
-            # Убираем пустые ответы или ответы типа "-" (часто бывает в анкетах)
             valid_texts = df[target_column].dropna()
             valid_texts = valid_texts[valid_texts.str.len() > 2]
             
@@ -87,13 +85,13 @@ def render_dashboard(df):
                     fig_wc = create_wordcloud_fig(valid_texts)
                     if fig_wc:
                         st.pyplot(fig_wc)
+                        plt.close(fig_wc)  # Явное освобождение памяти после отрисовки
                 
                 with col_text2:
                     st.markdown("**Топ-15 частых слов**")
                     top_words_df = get_top_words_df(valid_texts, top_n=15)
                     
                     if not top_words_df.empty:
-                        # Строим компактный горизонтальный бар-чарт для таблицы
                         fig_top = px.bar(
                             top_words_df.sort_values('Частота', ascending=True), 
                             x='Частота', 
