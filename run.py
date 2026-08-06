@@ -7,7 +7,7 @@ from services.filters import apply_filters
 from services.visualize import render_dashboard
 
 st.set_page_config(
-    page_title="Аналитика: Психологическое консультирование", 
+    page_title="ПК 1500", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
