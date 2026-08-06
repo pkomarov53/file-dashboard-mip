@@ -1,6 +1,5 @@
-# Настройка визуализации данных
 import streamlit as st
-from services.diagrams import create_bar_chart, create_donut_chart_from_multiple_cols
+from services.diagrams import create_bar_chart, create_multi_col_chart
 from services.text_analysis import get_top_words_df, create_wordcloud_fig
 import plotly.express as px
 import matplotlib.pyplot as plt
@@ -8,6 +7,15 @@ import matplotlib.pyplot as plt
 def render_dashboard(df):
     st.title("Обратная связь студентов")
         
+    # Настройки отображения в боковой панели
+    st.sidebar.header("Настройки визуализации")
+    chart_style = st.sidebar.radio(
+        "Вид категориальных диаграмм:",
+        options=["Кольцевая", "Столбчатая"],
+        index=0
+    )
+    chart_type = "donut" if chart_style == "Кольцевая" else "bar"
+
     # KPI 
     st.markdown("### Сводные показатели")
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
@@ -49,8 +57,9 @@ def render_dashboard(df):
         with col4:
             mentor_cols = [c for c in df.columns if 'Что Вам больше всего нравится или кажется полезным в учебном канале с наставником?' in c and 'Другое' not in c]
             if mentor_cols:
-                fig_mentor = create_donut_chart_from_multiple_cols(df, mentor_cols, "Ценность канала с наставником")
-                st.plotly_chart(fig_mentor, use_container_width=True)
+                fig_mentor = create_multi_col_chart(df, mentor_cols, "Ценность канала с наставником", chart_type=chart_type)
+                if fig_mentor:
+                    st.plotly_chart(fig_mentor, use_container_width=True)
 
     with tab3:
         st.subheader("Профессиональное развитие")
@@ -58,13 +67,15 @@ def render_dashboard(df):
         with col5:
             direction_cols = [c for c in df.columns if 'Какие направления в психологическом консультировании' in c and 'Другое' not in c]
             if direction_cols:
-                fig_dir = create_donut_chart_from_multiple_cols(df, direction_cols, "Интересные направления")
-                st.plotly_chart(fig_dir, use_container_width=True)
+                fig_dir = create_multi_col_chart(df, direction_cols, "Интересные направления", chart_type=chart_type)
+                if fig_dir:
+                    st.plotly_chart(fig_dir, use_container_width=True)
         with col6:
             career_cols = [c for c in df.columns if 'Что Вы считаете важным в карьере?' in c and 'Другое' not in c]
             if career_cols:
-                fig_car = create_donut_chart_from_multiple_cols(df, career_cols, "Важные факторы в карьере")
-                st.plotly_chart(fig_car, use_container_width=True)
+                fig_car = create_multi_col_chart(df, career_cols, "Важные факторы в карьере", chart_type=chart_type)
+                if fig_car:
+                    st.plotly_chart(fig_car, use_container_width=True)
                 
     with tab4:
         st.subheader("Анализ текстовых комментариев")
@@ -84,7 +95,7 @@ def render_dashboard(df):
                     fig_wc = create_wordcloud_fig(valid_texts)
                     if fig_wc:
                         st.pyplot(fig_wc)
-                        plt.close(fig_wc)  # освобождение памяти после отрисовки
+                        plt.close(fig_wc)
                 
                 with col_text2:
                     st.markdown("**Топ-15 частых слов**")
