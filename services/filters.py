@@ -8,11 +8,12 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     with st.sidebar.form(key="filters_form"):
         draft_filters = {}
 
-        # --- Группа фильтров: Демография ---
+        # Группа фильтров: Демография
         with st.expander("Демография студентов", expanded=True):
             
             gender_col = 'Укажите Ваш пол'
             if gender_col in df.columns:
+
                 # Добавляем категорию для пустых значений
                 genders = df[gender_col].dropna().unique().tolist()
                 genders.sort(key=lambda x: str(x))
@@ -40,7 +41,7 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
                     st.markdown("**Псих. образование**")
                     draft_filters['edu'] = [e for e in edu_options if st.checkbox(str(e), value=True, key=f"f_edu_{e}")]
 
-        # --- Группа фильтров: Организационные параметры ---
+        # Группа фильтров: Организационные параметры
         with st.expander("Организационные параметры", expanded=False):
             
             if 'track_numb' in df.columns:
@@ -58,7 +59,7 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
                     st.markdown("**Канал с наставником**")
                     draft_filters['mentor'] = [m for m in mentor_options if st.checkbox(str(m), value=True, key=f"f_mentor_{m}")]
 
-        # --- Группа фильтров: Оценки ---
+        # Группа фильтров: Оценки 
         with st.expander("Оценки студентов", expanded=False):
             
             speaker_col = 'Как Вы оцениваете работу спикера модуля?'
@@ -86,7 +87,7 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     if submit_button:
         st.session_state['applied_filters'] = draft_filters
 
-    # --- ФИЛЬТРАЦИЯ ДАТАФРЕЙМА ---
+    # Датафрейм
     filtered_df = df.copy()
     applied = st.session_state['applied_filters']
 

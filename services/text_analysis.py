@@ -7,12 +7,10 @@ import pymorphy3
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
-# Инициализация морфологического анализатора
 morph = pymorphy3.MorphAnalyzer()
 
 STOPWORDS_FILE = "data/stopwords.txt"
 
-# Базовый набор стоп-слов на случай отсутствия внешнего файла
 DEFAULT_STOPWORDS = {
     "и", "в", "во", "не", "что", "он", "на", "я", "с", "со", "как", "а", "то", 
     "все", "она", "так", "его", "но", "да", "ты", "к", "у", "же", "вы", "за", 

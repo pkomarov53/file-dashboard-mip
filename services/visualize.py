@@ -6,10 +6,9 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 
 def render_dashboard(df):
-    st.title("Дашборд: Обратная связь студентов")
-    st.markdown("Детальный анализ удовлетворенности, использования платформы и карьерных интересов.")
-    
-    # --- БЛОК 1: KPI ---
+    st.title("Обратная связь студентов")
+        
+    # KPI 
     st.markdown("### Сводные показатели")
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
     kpi1.metric("Всего анкет", len(df))
@@ -28,7 +27,7 @@ def render_dashboard(df):
 
     st.divider()
 
-    # --- БЛОК 2: НАВИГАЦИЯ ПО ВКЛАДКАМ ---
+    # Вкладки
     tab1, tab2, tab3, tab4 = st.tabs(["Учебный процесс", "Платформа и Наставник", "Карьера и интересы", "Открытые ответы"])
 
     with tab1:
@@ -85,7 +84,7 @@ def render_dashboard(df):
                     fig_wc = create_wordcloud_fig(valid_texts)
                     if fig_wc:
                         st.pyplot(fig_wc)
-                        plt.close(fig_wc)  # Явное освобождение памяти после отрисовки
+                        plt.close(fig_wc)  # освобождение памяти после отрисовки
                 
                 with col_text2:
                     st.markdown("**Топ-15 частых слов**")
